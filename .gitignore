@@ -26,3 +26,12 @@
 *.exe
 *.out
 *.app
+
+# Island Files
+*.isd
+
+# Bitmap Images
+*.bmp
+
+# Text Files
+*.txt
