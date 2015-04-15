@@ -35,3 +35,10 @@
 
 # Text Files
 *.txt
+
+# Codeblocks Project Files
+*.cbp
+*.depend
+
+# misc Files
+*.bak

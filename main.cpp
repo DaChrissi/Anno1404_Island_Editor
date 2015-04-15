@@ -65,7 +65,7 @@ void writeShort(ostream& file, short val)
 }
 
 
-int convertImage(char* inPath, char* outPath){
+int convertImage(string inPath, string outPath){
     // variables
     BMP image;
     char bytes[4];
@@ -75,7 +75,7 @@ int convertImage(char* inPath, char* outPath){
     int i, j;
 
     // load the input image
-    image.ReadFromFile(inPath);
+    image.ReadFromFile(inPath.c_str());
     height = image.TellHeight();
     width = image.TellWidth();
     chunksize = height/16;
@@ -95,7 +95,7 @@ int convertImage(char* inPath, char* outPath){
     }
 
     //create the output File
-    ofstream outFile(outPath, ifstream::binary);
+    ofstream outFile(outPath.c_str(), ifstream::binary);
 
     //write the start of the File
     outFile << "<Width>" << width << "</Width>\r\n" << "<Height>" << height << "</Height>\r\n";
@@ -227,5 +227,8 @@ int main(int argc, char* argv[])
             cout << "Fehler aufgetreten. Konvertierung wurde abgebrochen. Zum beenden Fenster schließen." << endl;
         }
     }
+
+    cin.get();
+
     return 0;
 }
