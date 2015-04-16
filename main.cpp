@@ -1,9 +1,22 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+
+#include <sys/stat.h>
+
 #include "EasyBMP.h"
 
 using namespace std;
+
+bool fileExists(const string& filename)
+{
+    struct stat buf;
+    if (stat(filename.c_str(), &buf) != -1)
+    {
+        return true;
+    }
+    return false;
+}
 
 float readFloat(istream& file){
     float x;
@@ -74,24 +87,43 @@ int convertImage(string inPath, string outPath){
     int chunksize = 0;
     int i, j;
 
+     // check if image exists
+     if(!fileExists(inPath)){
+        cerr << "Bilddatei nicht gefunden!" << endl;
+        return -1;
+     }
+
     // load the input image
-    image.ReadFromFile(inPath.c_str());
+    bool success = image.ReadFromFile(inPath.c_str());
     height = image.TellHeight();
     width = image.TellWidth();
     chunksize = height/16;
 
+    // alert the User if the image could not be read
+    if(!success){
+        cerr << "Fehler: Bild konnte nicht gelesen werden!" << endl;
+        cerr << "Moegliche Ursache: Bild ist mit Alphakanal gespeichert." << endl;
+        cerr << "Bild als 24bpp (R8 G8 B8) speichern!" << endl;
+        return -1;
+    }
+
+    cout << "Breite: " << width << " Hoehe: " << height << endl;
+
     // check if the dimensions match
     if(height != width){
-        cerr << "Error: Bild ist nicht quadratisch" << endl;
+        cerr << "Fehler: Bild ist nicht quadratisch" << endl;
         return -1;
-        if(height > 512){
-            cerr << "Error: Bild ist zu groß" << endl;
-            return -1;
-            if(height%16 != 0){
-                cerr << "Error: Größe des Bildes ist nicht durch 16 teilbar" << endl;
-                return -1;
-            }
-        }
+    }
+    // check if image is not too large
+    else if(height > 512 || width > 512){
+        cerr << "Fehler: Bild ist zu gross" << endl;
+        return -1;
+    }
+    // check if dimensions are multiples of 16
+    // this also means the image has to be at least 16x16
+    else if(height%16 != 0 || width%16 != 0){
+        cerr << "Fehler: Groesse des Bildes ist nicht durch 16 teilbar" << endl;
+        return -1;
     }
 
     //create the output File
@@ -200,6 +232,10 @@ int main(int argc, char* argv[])
 {
     SetEasyBMPwarningsOff(); // TODO: out of bounds warning
 
+    // stores filenames
+    string in = "input.bmp";
+    string out = "output.isd";
+
     cout << "Konvertiert ein .bmp Bild in eine Anno-1404 Inseldatei." << endl;
     cout << "Im Moment wird nur die Heightmap bearbeitet, alles andere muss danach von Hand" << endl;
     cout << "erledigt werden." << endl << endl;
@@ -209,26 +245,41 @@ int main(int argc, char* argv[])
     cout << "24bit pro Pixel. Das Programm nimmt an, dass das Bild in Graustufen vorliegt." << endl << endl;
     cout << "Dieses Programm verwendet EasyBMP (http://easybmp.sourceforge.net/)." << endl << endl << endl;
 
-    if(argc > 2){   // enough arguments, use #1 and #2 as input/output path
-        cout << "Lese " << argv[1] << " ein, Insel wird in " << argv[2] << " gespeichert." << endl;
-        if(convertImage(argv[1], argv[2]) == 0){
-            cout << "Konvertierung erfolgreich. Zum beenden Fenster schließen." << endl;
+    for(int i=1;i<argc;i++){          // iterate trough the arguments
+        string argument = argv[i];    // store every second argument, starting with the first
+        if(argument == "-help"){
+            cout << "Moegliche Argumente:\n-help\n-input <dateiname>\n-output <dateiname>" << endl << endl;
+            cout << "Beispiel: start IslandToBitmap.exe -input meinBild.bmp -output n_s_06.isd" << endl << endl;
+            cout << "Zum beenden Fenster schliessen." << endl;
+            cin.get();      // pause the program
+            return 0;
+        }
+        else if(argument == "-input"){
+            in = argv[i+1];             // store the next argument in the string
+            i++; // increase i by one to skip the argument we just stored in in
+        }
+        else if(argument == "-output"){
+            out = argv[i+1];             // store the next argument in the string
+            i++; // increase i by one to skip the argument we just stored in out
         }
         else{
-            cout << "Fehler aufgetreten. Konvertierung wurde abgebrochen. Zum beenden Fenster schließen." << endl;
-        }
-    }
-    else{           // use default values
-        cout << "Lese input.bmp ein, Insel wird in output.isd gespeichert." << endl;
-        if(convertImage("input.bmp", "output.isd") == 0){
-            cout << "Konvertierung erfolgreich. Zum beenden Fenster schliessen." << endl;
-        }
-        else{
-            cout << "Fehler aufgetreten. Konvertierung wurde abgebrochen. Zum beenden Fenster schließen." << endl;
+            cout << "Fehler: Argument " << argument << " wurde nicht erkannt!" << endl;
         }
     }
 
-    cin.get();
+    // start conversion
+    cout << "Lese " << in << " ein, Insel wird in " << out << " gespeichert." << endl;
+    int result = convertImage(in, out);
+
+
+    if(result == 0){
+        cout << "Konvertierung erfolgreich. Zum beenden Fenster schliessen." << endl;
+    }
+    else{
+        cout << "Fehler aufgetreten. Konvertierung wurde abgebrochen. Zum beenden Fenster schliessen." << endl;
+    }
+
+    cin.get();      // Pause the program
 
     return 0;
 }
